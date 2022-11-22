@@ -14,7 +14,7 @@ import boto3
 import os
 from functools import reduce
 #import boto3
-ACCESS_KEY = "accesskey"
+ACCESS_KEY = "Accesskey"
 SECRET_KEY = "secretkey"
 from botocore.exceptions import ClientError
 import datetime
@@ -79,7 +79,7 @@ def viewPhoto(request, pk):
     csv = Csv.objects.get(id=pk)
     print(csv.csvfile)
     df = pd.read_csv(csv.csvfile)
-	# parsing the DataFrame in json format.
+    # parsing the DataFrame in json format.
     json_records = df.reset_index().to_json(orient ='records')
     data = []
     data = json.loads(json_records)
@@ -115,8 +115,32 @@ def addPhoto(request):
                 description=data['description'],
                 image=image,
             )
-        time.sleep(30)
-        x = requests.get('http://127.0.0.1:8000/text/')
+        time.sleep(18)
+        #x = requests.get('http://127.0.0.1:8000/text/')
+        #AWS s3 file post
+        ACCESS_KEY = "Accesskey"
+        SECRET_KEY = "secretkey"
+        s3_client = boto3.client('s3', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
+        response = s3_client.list_objects_v2(Bucket='bucketname', Prefix='foldername')
+        all = response['Contents']        
+        latest = max(all, key=lambda x: x['LastModified'])
+        print(latest)
+        #print(latest.values())
+        list(reduce(lambda x, y: x + y, latest.items()))
+        a = list(reduce(lambda x, y: x + y, latest.items()))
+        print(a[1])
+
+        #file downloading 
+        #print(latest.values())
+        list(reduce(lambda x, y: x + y, latest.items()))
+        a = list(reduce(lambda x, y: x + y, latest.items()))
+        #print(a[1])
+        urllink = a[1]
+        url = f"https://bucketname.s3.amazonaws.com/{urllink}"
+        print(url)
+        datas = {"key": url}
+        member = Csv(csvfile=url)
+        member.save()
         return redirect('gallery')
     context = {'categories': categories}
     return render(request, 'photos/add.html', context)
@@ -128,13 +152,13 @@ def index(request):
 
 
 def text_views(request):
-    #ACCESS_KEY = "ACCESS_KEY"
-    #SECRET_KEY = "SECRET_KEY"
+    #ACCESS_KEY = "Accesskey"
+    #SECRET_KEY = "secretkey"
     
-    ACCESS_KEY = "accesskey"
+    ACCESS_KEY = "Accesskey"
     SECRET_KEY = "secretkey"
     s3_client = boto3.client('s3', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
-    response = s3_client.list_objects_v2(Bucket='bucketname', Prefix='subfoldername')
+    response = s3_client.list_objects_v2(Bucket='bucketname', Prefix='foldername')
     all = response['Contents']        
     latest = max(all, key=lambda x: x['LastModified'])
     print(latest)
@@ -149,10 +173,9 @@ def text_views(request):
     a = list(reduce(lambda x, y: x + y, latest.items()))
     #print(a[1])
     urllink = a[1]
-    #https://bucketname.s3.amazonaws.com/json/data.json
     url = f"https://bucketname.s3.amazonaws.com/{urllink}"
     print(url)
     datas = {"key": url}
-    member = Csv(csvfile=url)
-    member.save()
+    #member = Csv(csvfile=url)
+    #member.save()
     return JsonResponse({"code": "1", "status": "200", "data": [datas]})
